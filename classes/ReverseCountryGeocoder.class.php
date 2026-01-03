@@ -24,7 +24,8 @@ class ReverseCountryGeocoder
     public function getIsoCodes($longitude, $latitude): array {
         $stmt = $this->mysqli->prepare(
         'SELECT id FROM boundaries
-          WHERE ST_Contains(shape, ST_GeomFromText(?, 3857))'
+          WHERE ST_Contains(shape, ST_GeomFromText(?, 3857))
+          ORDER BY area ASC'
         );
         $point = 'POINT(' . $longitude . ' ' . $latitude . ')';
         $stmt->bind_param('s', $point);
@@ -49,7 +50,8 @@ class ReverseCountryGeocoder
         $this->mysqli->query(
           'CREATE TABLE boundaries (
             id VARCHAR(6) PRIMARY KEY NOT NULL,
-            shape GEOMETRY NOT NULL
+            shape GEOMETRY NOT NULL,
+            area DOUBLE NOT NULL
         ) ENGINE=MyISAM DEFAULT CHARSET=latin1;');
         $this->mysqli->query('ALTER TABLE boundaries ADD SPATIAL INDEX(shape)');
         $geojson = json_decode(file_get_contents($boundaries_file_path), true);
@@ -59,9 +61,9 @@ class ReverseCountryGeocoder
             $id = $feature["properties"]["id"];
             $geom = json_encode($feature["geometry"]);
             $stmt = $this->mysqli->prepare(
-              'INSERT INTO boundaries (id, shape) VALUES (?, ST_GeomFromGeoJSON(?))'
+              'INSERT INTO boundaries (id, shape, area) VALUES (?, ST_GeomFromGeoJSON(?), ST_AREA(ST_GeomFromGeoJSON(?)))'
             );
-            $stmt->bind_param('ss', $id, $geom);
+            $stmt->bind_param('sss', $id, $geom, $geom);
             $stmt->execute();
             $stmt->close();
         }
