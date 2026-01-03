@@ -39,10 +39,6 @@ class ReverseCountryGeocoder
             $r[] = $row[0];
         }
         $stmt->close();
-        // sort by length of iso code descending (i.e. US-TX, US)
-        usort($r, function ($a, $b) { 
-            return strlen($b) - strlen($a);
-        });
         return $r;
     }
 
